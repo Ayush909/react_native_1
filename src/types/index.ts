@@ -14,4 +14,5 @@ export type RootStackParamList = {
   Home: undefined;
   Scan: undefined;
   Results: undefined;
+  MediaPage: {path: string; type: 'photo' | 'video'};
 };

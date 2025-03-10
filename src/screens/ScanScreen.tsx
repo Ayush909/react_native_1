@@ -1,5 +1,5 @@
-import React, {useEffect} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React, {useCallback, useEffect, useRef} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 // import Camera from '../components/Camera';
 // import {useNavigation} from '@react-navigation/native';
 import {
@@ -7,7 +7,7 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from 'react-native-vision-camera';
-const ScanScreen = () => {
+const ScanScreen = ({navigation}) => {
   // const navigation = useNavigation();
 
   // const handleCapture = imageUri => {
@@ -15,17 +15,35 @@ const ScanScreen = () => {
   //   navigation.navigate('ResultScreen', {imageUri});
   // };
 
+  const cameraRef = useRef<Camera>(null);
+
   const device = useCameraDevice('back');
-  const hasPermission = useCameraPermission();
+  const {hasPermission, requestPermission} = useCameraPermission();
+
+  const checkPermission = useCallback(async () => {
+    const status = await requestPermission();
+    console.log('Camera permission status:', status);
+  }, [requestPermission]);
 
   useEffect(() => {
     checkPermission();
-  }, []);
+  }, [checkPermission]);
 
-  const checkPermission = async () => {
-    const status = await Camera.requestCameraPermission();
-    console.log('Camera permission status:', status);
-  };
+  const takePhoto = useCallback(async () => {
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePhoto();
+        console.log('Photo taken:', photo);
+        // You can add logic to handle the photo, e.g., navigate to another screen
+        navigation.navigate('MediaPage', {
+          path: photo.path,
+          type: 'photo',
+        });
+      } catch (error) {
+        console.error('Failed to take photo:', error);
+      }
+    }
+  }, [navigation]);
 
   if (!hasPermission) {
     return <Text>No camera permission</Text>;
@@ -37,13 +55,14 @@ const ScanScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text>Scan your receipt</Text>
-      {/* <Camera onCapture={handleCapture} /> */}
       <Camera
-        style={{flex: 1, width: '100%'}}
+        ref={cameraRef}
+        style={styles.camera}
         device={device}
         isActive={true}
+        photo={true}
       />
+      <TouchableOpacity style={styles.cameraButton} onPress={takePhoto} />
     </View>
   );
 };
@@ -53,6 +72,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  camera: {
+    flex: 1,
+    width: '100%',
+  },
+  cameraButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 50,
+    backgroundColor: 'skyblue',
+    position: 'absolute',
+    bottom: 50,
+    alignSelf: 'center',
   },
 });
 
